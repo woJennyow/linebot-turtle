@@ -8,7 +8,7 @@ const config = {
 };
 
 const client = new line.Client(config);
-
+//請GPT美化
 const mainPrompt = `題幹：
 自從阿明被爸爸胖揍一頓之後就開始頻繁地撿破爛，
 看見阿明這麼做，姊姊的眼神很是複雜。
