@@ -8,9 +8,17 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@line/bot-sdk": "^10.0.0",
     "express": "^5.1.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/woJennyow/linebot-turtle.git"
+  },
+  "bugs": {
+    "url": "https://github.com/woJennyow/linebot-turtle/issues"
+  },
+  "homepage": "https://github.com/woJennyow/linebot-turtle#readme",
+  "description": ""
 }
