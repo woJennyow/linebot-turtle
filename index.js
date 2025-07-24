@@ -4,8 +4,8 @@ const line = require('@line/bot-sdk');
 const express = require('express');
 
 const config = {
-  channelAccessToken: 'cTOKJdSRlL8LYBgrQtKCB/DZ3ajAOHYN2aZyh3j+Gs4j6sK6lo78Um29Vo+W34RQi2jzRUecamad5II9RnKCMkZ5EeSBkb8TQTGbhOdU7dMuUXz9aMYvGnqQQ+GJqHd/NeRTggi5ZQPMpSPf8uy0iwdB04t89/1O/w1cDnyilFU=',
-  channelSecret: '7c2ce056206edad1c9adb78946f446a7'
+  channelAccessToken: process.env.CHANNEL_ACCESS_TOKEN,
+  channelSecret: process.env.CHANNEL_SECRET
 };
 
 const client = new line.Client(config);
@@ -141,41 +141,56 @@ app.post('/webhook', line.middleware(config), async (req, res) => {
 });
 
 async function handleEvent(event) {
-  if (event.type !== 'message' || event.message.type !== 'text') return null;
-  const msg = event.message.text.trim();
+  try {
+    if (event.type !== 'message' || event.message.type !== 'text') return null;
+    const msg = event.message.text.trim();
 
-  // 初始題幹輸入：開始遊戲
-  if (msg === '開始遊戲') {
+    if (msg === '開始遊戲') {
+      return client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: storyData.intro
+      });
+    }
+
+    if (/^[1-7]$/.test(msg)) {
+      const topic = storyData.interactions[msg];
+      if (!topic) throw new Error('無效主題');
+      const qList = topic.questions.join('\n');
+      return client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `你選擇的是「${topic.keyword}」請輸入題號：\n${qList}`
+      });
+    }
+
+    const match = msg.match(/^(\d)-(\d)$/);
+    if (match) {
+      const [_, topicId, qId] = match;
+      const topic = storyData.interactions[topicId];
+      const question = topic?.questions[qId - 1];
+      const answer = topic?.answers[qId];
+      if (!question || !answer) {
+        return client.replyMessage(event.replyToken, {
+          type: 'text',
+          text: '找不到此問題或答案，請重新輸入。'
+        });
+      }
+      return client.replyMessage(event.replyToken, {
+        type: 'text',
+        text: `問題：「${question}」\n答案：${answer}\n\n請輸入 1~7 以繼續查詢其他主題`
+      });
+    }
+
     return client.replyMessage(event.replyToken, {
       type: 'text',
-      text: storyData.intro
+      text: '請輸入「開始遊戲」，或 1~7 選擇主題，再輸入格式如「1-2」來查詢問題答案。'
     });
-  }
-
-  // 選擇主題對象 1~7
-  if (/^[1-7]$/.test(msg)) {
-    const topic = storyData.interactions[msg];
-    const qList = topic.questions.join('\n');
+  } catch (error) {
+    console.error('處理事件時錯誤：', error);
     return client.replyMessage(event.replyToken, {
       type: 'text',
-      text: `你選擇的是「${topic.keyword}」請輸入題號：\n${qList}`
+      text: '❗ 系統錯誤，請稍後再試！'
     });
   }
-
-  // 題號回答（格式為 1-1、2-3...）
-  const match = msg.match(/^(\d)-(\d)$/);
-  if (match) {
-    const [_, topicId, qId] = match;
-    const topic = storyData.interactions[topicId];
-    const answer = topic.answers[qId];
-    if (!answer) return client.replyMessage(event.replyToken, { type: 'text', text: '無此題號。' });
-    return client.replyMessage(event.replyToken, {
-      type: 'text',
-      text: `問題：「${topic.questions[qId - 1]}」\n答案：${answer}\n\n請輸入 1~7 以繼續查詢其他主題`
-    });
-  }
-
-  return client.replyMessage(event.replyToken, { type: 'text', text: '請輸入「開始遊戲」或數字選項 1~7，例如「1-2」查看問題答案。' });
 }
 
 const port = process.env.PORT || 3000;
