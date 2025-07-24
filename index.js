@@ -10,6 +10,7 @@ const config = {
 
 const client = new line.Client(config);
 const app = express();
+app.use(line.middleware(config));
 app.use(express.json());
 
 const storyData = {
